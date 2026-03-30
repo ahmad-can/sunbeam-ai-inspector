@@ -1,0 +1,45 @@
+# Known transient / benign error patterns.
+#
+# Matches against these regexes receive a confidence PENALTY in the scorer
+# because they are normal during Juju/Sunbeam startup and resolve on their own.
+#
+# Each entry:
+#   id      — identifier for logging
+#   regex   — Python regex matched against the log message
+#   penalty — confidence reduction applied when this matches (0.0 to 1.0)
+#   reason  — why this is considered noise
+
+- id: JUJU_CONTAINER_TYPES_NOT_AVAILABLE
+  regex: "container types not yet available"
+  penalty: 0.25
+  reason: "Normal Juju startup — LXD/KVM provisioner waits for container support"
+
+- id: JUJU_PEER_RELATION_MISSING
+  regex: "Cannot check leader ready as peer relation missing"
+  penalty: 0.20
+  reason: "Normal during deployment — peer relations form asynchronously"
+
+- id: JUJU_NO_CHECKSUM
+  regex: "Response has no supported checksum"
+  penalty: 0.15
+  reason: "Benign Juju agent warning about payload validation"
+
+- id: JUJU_LOG_SENDER_WEBSOCKET
+  regex: "log-sender.*manifold worker returned unexpected error.*websocket.*close"
+  penalty: 0.15
+  reason: "Transient websocket disconnect during Juju controller communication"
+
+- id: APT_UNSTABLE_CLI
+  regex: "apt does not have a stable CLI interface"
+  penalty: 0.20
+  reason: "Standard apt warning in scripts, not an error"
+
+- id: SNAPD_SYSTEM_KEY_MISSING
+  regex: "system-key missing on disk"
+  penalty: 0.15
+  reason: "Normal snapd state during initial boot"
+
+- id: TLS_RAW_MODE_WARNING
+  regex: "Raw mode enabled: TLS routes for ALL protocols"
+  penalty: 0.15
+  reason: "Intentional TLS configuration, not an error"

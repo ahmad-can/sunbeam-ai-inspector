@@ -1,0 +1,87 @@
+{
+  "description": "Baseline from a successful Sunbeam CI run. Patterns listed here fire during NORMAL healthy deployments and should be treated as bootstrap noise when analyzing failed runs.",
+  "source_run": "sosreport-heatmor-2026-03-03-wccrzrm (successful build)",
+  "pattern_ids": {
+    "CILIUM_CNI_MISSING": {
+      "category": "network",
+      "note": "Machines always missing cilium_host interface during bootstrap — resolves after CNI init"
+    },
+    "SUNBEAM_CLUSTERD_UNAVAILABLE": {
+      "category": "sunbeam",
+      "note": "Clusterd service not initialized during early bootstrap phase"
+    },
+    "K8S_DNS_RESOLUTION_FAIL": {
+      "category": "network",
+      "note": "DNS resolution fails transiently while CoreDNS is starting"
+    },
+    "JUJU_WORKER_UNEXPECTED_ERROR": {
+      "category": "juju",
+      "note": "Transient manifold worker errors during model setup — self-recovers"
+    },
+    "MYSQL_CONNECTION_REFUSED": {
+      "category": "openstack",
+      "note": "MySQL not ready during initial charm install — retried successfully"
+    },
+    "RABBITMQ_CONNECTION_LOST": {
+      "category": "openstack",
+      "note": "RabbitMQ AMQP connections reset during initial charm install"
+    },
+    "PIPELINE_COMMAND_FAILED": {
+      "category": "pipeline",
+      "note": "Commands fail and are retried during setup phases"
+    },
+    "SNAP_SERVICE_CRASH_LOOP": {
+      "category": "snap",
+      "note": "Snap services restart during initial install before config is applied"
+    },
+    "OPENSTACK_HYPERVISOR_ERROR": {
+      "category": "openstack",
+      "note": "Hypervisor errors during early deployment before all services are up"
+    },
+    "SUNBEAM_JUJU_ACCOUNT_NOT_FOUND": {
+      "category": "sunbeam",
+      "note": "Juju user account not yet created during early bootstrap"
+    },
+    "OVN_CONNECTION_RESET": {
+      "category": "network",
+      "note": "OVN/OVS SSL connections reset during network setup — normal reconnect behavior"
+    },
+    "SNAP_INSTALL_FAILED": {
+      "category": "snap",
+      "note": "Transient snap install failures that are retried successfully"
+    },
+    "NETWORK_TIMEOUT": {
+      "category": "network",
+      "note": "Network timeouts during bootstrap while services are starting"
+    },
+    "APPARMOR_DENIED": {
+      "category": "security",
+      "note": "AppArmor denials during snap confinement setup — expected"
+    },
+    "CURL_CONNECT_TIMEOUT": {
+      "category": "network",
+      "note": "Curl connection timeouts during cloud-init provisioning"
+    },
+    "SYSTEMD_NETWORKD_WAIT_TIMEOUT": {
+      "category": "k8s_control_plane",
+      "note": "systemd-networkd-wait-online timeout during k8s bootstrap — transient"
+    },
+    "NETWORK_CONNECTION_REFUSED": {
+      "category": "network",
+      "note": "Connection refused during service startup before ports are bound"
+    },
+    "VALIDATION_SMOKE_FAILURE": {
+      "category": "validation",
+      "note": "Transient smoke test failures that pass on retry"
+    }
+  },
+  "domain_statuses": {
+    "infrastructure": "healthy",
+    "network": "degraded",
+    "kubernetes": "degraded",
+    "juju": "degraded",
+    "storage": "degraded",
+    "observability": "degraded",
+    "pipeline": "failed"
+  }
+}

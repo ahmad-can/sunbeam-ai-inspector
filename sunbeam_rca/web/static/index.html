@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sunbeam AI Inspector</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css?v=6">
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <h1>Sunbeam AI Inspector</h1>
+      <p class="subtitle">Root-Cause Analysis for Sunbeam CI Failures</p>
+    </div>
+  </header>
+
+  <main>
+    <!-- Input Section -->
+    <section id="input-section" class="card">
+      <div class="tabs">
+        <button class="tab active" data-tab="upload">Upload Files</button>
+        <button class="tab" data-tab="url">Test Run URL</button>
+      </div>
+
+      <div id="tab-upload" class="tab-panel active">
+        <div class="upload-grid">
+          <div class="drop-zone" id="drop-pipeline">
+            <div class="drop-zone-icon">&#128230;</div>
+            <p class="drop-zone-label">Pipeline Logs (.zip)</p>
+            <p class="drop-zone-hint">Drag & drop or click to browse</p>
+            <p class="drop-zone-file" id="pipeline-file-name"></p>
+            <input type="file" id="pipeline-input" accept=".zip" hidden>
+          </div>
+          <div class="drop-zone" id="drop-sosreport">
+            <div class="drop-zone-icon">&#128196;</div>
+            <p class="drop-zone-label">Sosreport (.tar.xz)</p>
+            <p class="drop-zone-hint">Drag & drop or click to browse</p>
+            <p class="drop-zone-file" id="sosreport-file-name"></p>
+            <input type="file" id="sosreport-input" accept=".tar.xz,.xz" hidden>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-url" class="tab-panel">
+        <div class="url-input-group">
+          <label for="testrun-url">Test Run URL</label>
+          <input
+            type="url"
+            id="testrun-url"
+            placeholder="https://solutions.qa.canonical.com/testruns/636e0f24-..."
+          >
+          <p class="input-hint">Artifacts will be downloaded automatically</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btn-analyze" class="btn-primary">Analyze</button>
+      </div>
+      <p id="input-error" class="error-text"></p>
+    </section>
+
+    <!-- Progress Section -->
+    <section id="progress-section" class="card hidden">
+      <h2>Analysis Progress</h2>
+      <div class="stepper-v">
+        <div class="step-row" data-index="0">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Collect Logs</span>
+            <span class="step-desc">Gather pipeline & sosreport artifacts</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row" data-index="1">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Parse</span>
+            <span class="step-desc">Extract structured events from all log sources</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row" data-index="2">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Pattern Match</span>
+            <span class="step-desc">Scan events against known failure signatures</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row step-row-agents" data-index="3">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Domain Agents</span>
+            <span class="step-desc">Specialized AI agents analyze their domains</span>
+            <span class="step-stat"></span>
+            <div class="agent-badges" id="agent-badges"></div>
+          </div>
+        </div>
+        <div class="step-row" data-index="4">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Orchestrate</span>
+            <span class="step-desc">Cross-correlate agent findings into hypotheses</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row" data-index="5">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Deep Analysis</span>
+            <span class="step-desc">LLM scans for unknown errors beyond regex patterns</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row" data-index="6">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+            <div class="step-line"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Score & Rank</span>
+            <span class="step-desc">Deduplicate, apply causal chain scoring</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+        <div class="step-row" data-index="7">
+          <div class="step-rail">
+            <div class="step-dot"></div>
+          </div>
+          <div class="step-content">
+            <span class="step-label">Generate Report</span>
+            <span class="step-desc">Build markdown &amp; JSON output with causal diagram</span>
+            <span class="step-stat"></span>
+          </div>
+        </div>
+      </div>
+      <p id="progress-status" class="status-text">Starting analysis...</p>
+    </section>
+
+    <!-- Report Section -->
+    <section id="report-section" class="hidden">
+      <!-- Markdown Report -->
+      <div id="report-card" class="card">
+        <div class="report-header">
+          <h2>RCA Report</h2>
+          <div class="report-actions">
+            <button id="btn-download-md" class="btn-secondary btn-sm">Download .md</button>
+            <button id="btn-download-json" class="btn-secondary btn-sm">Download .json</button>
+          </div>
+        </div>
+        <div id="report-content" class="report-body"></div>
+      </div>
+
+      <!-- Ranked Candidates -->
+      <div id="candidates-card" class="card">
+        <h2>Ranked Candidates</h2>
+        <div id="candidates-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Sunbeam AI Inspector &middot; Powered by LangGraph</p>
+  </footer>
+
+  <script src="/static/app.js?v=7"></script>
+</body>
+</html>
