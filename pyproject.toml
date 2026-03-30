@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sunbeam-rca"
+version = "0.1.0"
+description = "Root-Cause-Analysis system for Sunbeam CI build failures"
+requires-python = ">=3.10"
+dependencies = [
+    "langgraph",
+    "langchain",
+    "langchain-core",
+    "langchain-openai",
+    "langchain-anthropic",
+    "langchain-ollama",
+    "pydantic>=2.0",
+    "pyyaml",
+    "python-dotenv",
+    "fastapi",
+    "uvicorn[standard]",
+    "python-multipart",
+    "sse-starlette",
+    "httpx",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.scripts]
+sunbeam-rca = "sunbeam_rca.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["sunbeam_rca*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

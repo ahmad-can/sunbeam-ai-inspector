@@ -1,0 +1,685 @@
+# Sunbeam RCA failure pattern library.
+# Each pattern has:
+#   id            — unique identifier
+#   category      — failure domain
+#   description   — human-readable explanation
+#   regex         — Python regex matched against the log message
+#   source_types  — which LogEvent source_types to scan
+#   severity      — 1 (low) to 10 (critical)
+#   context_window_secs — seconds of context to capture around the match
+
+# ── Pipeline errors ──────────────────────────────────────────────
+
+- id: PIPELINE_ERROR_ANNOTATION
+  category: pipeline
+  description: "GitHub Actions ##[error] annotation"
+  regex: "##\\[error\\]"
+  source_types: [pipeline]
+  severity: 9
+  context_window_secs: 120
+
+- id: PIPELINE_SUBPROCESS_ERROR
+  category: pipeline
+  description: "A subprocess exited with non-zero status"
+  regex: "subprocess\\.CalledProcessError.*returned non-zero"
+  source_types: [pipeline]
+  severity: 9
+  context_window_secs: 120
+
+- id: PIPELINE_PYTHON_TRACEBACK
+  category: pipeline
+  description: "Python traceback detected in pipeline log"
+  regex: "Traceback \\(most recent call last\\)"
+  source_types: [pipeline]
+  severity: 8
+  context_window_secs: 60
+
+- id: PIPELINE_COMMAND_FAILED
+  category: pipeline
+  description: "Command failed with explicit exit code"
+  regex: "exit (code|status)\\s+[1-9]"
+  source_types: [pipeline]
+  severity: 7
+  context_window_secs: 60
+
+# ── Juju failures ────────────────────────────────────────────────
+
+- id: JUJU_CHARM_DOWNLOAD_FAIL
+  category: juju
+  description: "Juju failed to download a charm from charmhub"
+  regex: "failed to download charm \"ch:"
+  source_types: [juju, pipeline]
+  severity: 8
+  context_window_secs: 120
+
+- id: JUJU_HOOK_FAILED
+  category: juju
+  description: "Juju hook execution failed"
+  regex: "hook failed:.*"
+  source_types: [juju]
+  severity: 8
+  context_window_secs: 120
+
+- id: JUJU_AGENT_LOST
+  category: juju
+  description: "Juju agent lost contact with controller"
+  regex: "agent is not communicating|agent lost"
+  source_types: [juju, syslog]
+  severity: 7
+  context_window_secs: 180
+
+- id: JUJU_UNIT_ERROR
+  category: juju
+  description: "Juju unit entered error state"
+  regex: "unit.*entered.*error|workload-status.*error|hook \".*\" failed.*exit status"
+  source_types: [juju]
+  severity: 7
+  context_window_secs: 120
+
+- id: JUJU_WORKER_UNEXPECTED_ERROR
+  category: juju
+  description: "Juju manifold worker returned unexpected error"
+  regex: "manifold worker returned unexpected error"
+  source_types: [juju]
+  severity: 8
+  context_window_secs: 120
+
+# ── Kernel / OOM ─────────────────────────────────────────────────
+
+- id: OOM_KILL
+  category: kernel
+  description: "Kernel OOM killer invoked"
+  regex: "Out of memory|oom-killer|oom_reaper|invoked oom-killer"
+  source_types: [syslog, dmesg]
+  severity: 10
+  context_window_secs: 300
+
+- id: KERNEL_PANIC
+  category: kernel
+  description: "Kernel panic detected"
+  regex: "Kernel panic|kernel BUG"
+  source_types: [syslog, dmesg]
+  severity: 10
+  context_window_secs: 300
+
+# ── Disk / filesystem ────────────────────────────────────────────
+
+- id: DISK_FULL
+  category: disk
+  description: "No space left on device"
+  regex: "No space left on device|ENOSPC"
+  source_types: [syslog, pipeline, juju]
+  severity: 9
+  context_window_secs: 120
+
+- id: INODE_EXHAUSTION
+  category: disk
+  description: "Inode table exhaustion"
+  regex: "no free inodes|inode.*full"
+  source_types: [syslog]
+  severity: 9
+  context_window_secs: 120
+
+# ── Network ──────────────────────────────────────────────────────
+
+- id: NETWORK_CONNECTION_REFUSED
+  category: network
+  description: "Connection refused"
+  regex: "[Cc]onnection refused"
+  source_types: [syslog, pipeline, juju]
+  severity: 6
+  context_window_secs: 60
+
+- id: NETWORK_TIMEOUT
+  category: network
+  description: "Network timeout or unreachable host"
+  regex: "connection timed out|timed out after \\d|i/o timeout|[Nn]etwork is unreachable"
+  source_types: [syslog, pipeline, juju, cloud_init]
+  severity: 6
+  context_window_secs: 60
+
+- id: DNS_FAILURE
+  category: network
+  description: "DNS resolution failure"
+  regex: "Name or service not known|Temporary failure in name resolution|NXDOMAIN"
+  source_types: [syslog, pipeline, juju, cloud_init]
+  severity: 7
+  context_window_secs: 60
+
+# ── Container / Image ────────────────────────────────────────────
+
+- id: IMAGE_PULL_FAILURE
+  category: container
+  description: "Container image pull failed"
+  regex: "ImagePullBackOff|ErrImagePull|failed to pull|pull access denied"
+  source_types: [syslog, pipeline, juju]
+  severity: 8
+  context_window_secs: 120
+
+# ── LXD ──────────────────────────────────────────────────────────
+
+- id: LXD_START_FAILED
+  category: lxd
+  description: "LXD container failed to start"
+  regex: "lxc start failed|Failed to run.*lxd|LXD socket not found"
+  source_types: [syslog, juju, pipeline]
+  severity: 8
+  context_window_secs: 120
+
+# ── Ceph ─────────────────────────────────────────────────────────
+
+- id: CEPH_HEALTH_ERR
+  category: ceph
+  description: "Ceph cluster in HEALTH_ERR state"
+  regex: "HEALTH_ERR|HEALTH_WARN"
+  source_types: [syslog, juju]
+  severity: 7
+  context_window_secs: 180
+
+- id: CEPH_OSD_DOWN
+  category: ceph
+  description: "Ceph OSD down or out"
+  regex: "osd\\.[0-9]+ (is down|out)"
+  source_types: [syslog]
+  severity: 8
+  context_window_secs: 180
+
+# ── Snap ─────────────────────────────────────────────────────────
+
+- id: SNAP_INSTALL_FAILED
+  category: snap
+  description: "Snap package installation or refresh failed"
+  regex: "snap.*install.*failed|snap.*refresh.*failed|snapd.*error"
+  source_types: [syslog, pipeline, juju]
+  severity: 7
+  context_window_secs: 120
+
+# ── Sunbeam specific ─────────────────────────────────────────────
+
+- id: SUNBEAM_CLUSTER_JOIN_FAIL
+  category: sunbeam
+  description: "Sunbeam cluster join operation failed"
+  regex: "sunbeam.*cluster.*join.*failed|sunbeam.*cluster.*join.*error|Error joining cluster|JoinException"
+  source_types: [pipeline, juju, sunbeam]
+  severity: 9
+  context_window_secs: 180
+
+- id: SUNBEAM_BOOTSTRAP_FAIL
+  category: sunbeam
+  description: "sunbeam cluster bootstrap failed"
+  regex: "sunbeam.*cluster.*bootstrap.*fail|sunbeam.*prepare-node.*fail"
+  source_types: [pipeline, juju, sunbeam]
+  severity: 9
+  context_window_secs: 180
+
+- id: SUNBEAM_WAIT_TIMEOUT
+  category: sunbeam
+  description: "Sunbeam cluster join wait timed out"
+  regex: "wait timed out after"
+  source_types: [pipeline, juju, sunbeam]
+  severity: 9
+  context_window_secs: 180
+
+# ── MicroCeph ───────────────────────────────────────────────────
+
+- id: MICROCEPH_DB_UNINITIALIZED
+  category: ceph
+  description: "MicroCeph database not yet initialized — node cannot join Ceph cluster"
+  regex: "failed listing disks: Database is not yet initialized"
+  source_types: [juju, syslog]
+  severity: 9
+  context_window_secs: 180
+
+- id: MICROCEPH_RADOS_ERROR
+  category: ceph
+  description: "MicroCeph RADOS client initialization failed"
+  regex: "RADOS object not found|Error initializing cluster client"
+  source_types: [juju, syslog]
+  severity: 9
+  context_window_secs: 180
+
+# ── K8s control plane / etcd ─────────────────────────────────────
+
+- id: ETCD_RESTART
+  category: k8s_control_plane
+  description: "etcd was restarted (e.g. during charm upgrade hook) — can cause control plane instability"
+  regex: "[Rr]estarting services:.*etcd|restarted etcd"
+  source_types: [juju, syslog]
+  severity: 9
+  context_window_secs: 300
+
+- id: ETCD_NO_LEADER
+  category: k8s_control_plane
+  description: "etcd cluster has no elected leader — control plane cannot serve requests"
+  regex: "etcdserver: no leader|rafthttp:.*unreachable|etcdserver: leader changed"
+  source_types: [syslog]
+  severity: 9
+  context_window_secs: 300
+
+- id: K8S_APISERVER_WATCH_ERROR
+  category: k8s_control_plane
+  description: "kube-apiserver watch channel error due to etcd instability"
+  regex: "watch chan error|etcdserver: request timed out|etcdserver: mvcc: required revision has been compacted"
+  source_types: [syslog]
+  severity: 7
+  context_window_secs: 120
+
+- id: K8SD_FEATURE_ORDERING_ERROR
+  category: k8s_control_plane
+  description: "k8sd feature controller tried to configure a feature before its dependency was installed"
+  regex: "cannot upgrade ck-network as it is not installed|Failed to apply feature configuration"
+  source_types: [syslog]
+  severity: 8
+  context_window_secs: 120
+
+- id: CONTAINERD_CNI_INIT_FAIL
+  category: k8s_control_plane
+  description: "containerd could not load CNI configuration — no network config present at startup"
+  regex: "no network config found in /etc/cni|failed to load cni during init|cni config load failed"
+  source_types: [syslog]
+  severity: 7
+  context_window_secs: 120
+
+- id: KUBELET_NETWORK_PLUGIN_NOT_READY
+  category: k8s_control_plane
+  description: "kubelet reports NetworkPluginNotReady — CNI plugin not initialized"
+  regex: "NetworkPluginNotReady|cni plugin not initialized|network is not ready.*NetworkReady=false"
+  source_types: [syslog]
+  severity: 7
+  context_window_secs: 120
+
+- id: CILIUM_POD_PENDING
+  category: k8s_control_plane
+  description: "Cilium DaemonSet pod is stuck in Pending state — CNI cannot become operational"
+  regex: "cilium.*phase=Pending|Unready.*cilium|Pod/cilium.*Pending"
+  source_types: [juju, syslog]
+  severity: 7
+  context_window_secs: 180
+
+- id: METALLB_WEBHOOK_FAILURE
+  category: k8s_control_plane
+  description: "MetalLB deployment failed due to webhook or control plane connectivity issues"
+  regex: "failed to deploy MetalLB|metallb.*webhook.*connection refused"
+  source_types: [juju, syslog]
+  severity: 6
+  context_window_secs: 120
+
+- id: K8S_CONTROL_PLANE_UNSTABLE
+  category: k8s_control_plane
+  description: "Kubernetes API server unreachable or refusing connections"
+  regex: "dial tcp.*6443.*connection refused|apiserver.*connection refused|Unable to connect to the server"
+  source_types: [syslog, juju, pipeline]
+  severity: 8
+  context_window_secs: 180
+
+- id: SYSTEMD_NETWORKD_WAIT_TIMEOUT
+  category: k8s_control_plane
+  description: "systemd-networkd-wait-online timed out — host networking not ready at boot"
+  regex: "Timeout occurred while waiting for network connectivity|systemd-networkd-wait-online.*timed out"
+  source_types: [syslog]
+  severity: 5
+  context_window_secs: 120
+
+# ── Observability / OpenTelemetry ────────────────────────────────
+
+- id: OTEL_COLLECTOR_CONFIG_ERROR
+  category: observability
+  description: "OpenTelemetry collector failed to start due to configuration error"
+  regex: "failed to get config.*cannot unmarshal|prometheus receiver.*failed to unmarshal|job_name is empty"
+  source_types: [syslog]
+  severity: 9
+  context_window_secs: 120
+
+- id: OTEL_COLLECTOR_CRASH_LOOP
+  category: observability
+  description: "OpenTelemetry collector service is crash-looping"
+  regex: "snap\\.opentelemetry-collector.*Main process exited.*FAILURE|snap\\.opentelemetry-collector.*status=1"
+  source_types: [syslog]
+  severity: 9
+  context_window_secs: 120
+
+- id: GRAFANA_AGENT_ERROR
+  category: observability
+  description: "Grafana agent or cos-agent service error"
+  regex: "grafana-agent.*error|cos-agent.*error|cos-agent.*failed"
+  source_types: [syslog, juju]
+  severity: 7
+  context_window_secs: 120
+
+- id: OTEL_METRICS_MISSING
+  category: observability
+  description: "OpenTelemetry metrics endpoint returned no data — collector not serving"
+  regex: "otelcol_process_uptime.*metric not found|metrics.*not found on machine"
+  source_types: [pipeline]
+  severity: 9
+  context_window_secs: 60
+
+# ── Validation / Tempest tests ──────────────────────────────────
+
+- id: TEMPEST_TEST_EXECUTION_ERROR
+  category: validation
+  description: "Tempest test execution failed inside the container"
+  regex: "task error.*Task\\s+\\d+.*status\\s+'failed'|Error during test execution"
+  source_types: [pipeline, sunbeam, kubernetes, juju]
+  severity: 9
+  context_window_secs: 120
+
+- id: VALIDATION_SMOKE_FAILURE
+  category: validation
+  description: "Sunbeam validation smoke tests reported failures"
+  regex: "Validation tests:\\s+failed\\s+[1-9]"
+  source_types: [pipeline, sunbeam]
+  severity: 8
+  context_window_secs: 120
+
+- id: PYTEST_ASSERTION_FAILURE
+  category: validation
+  description: "A pytest assertion failed during test execution"
+  regex: "Assertion(?:Error)?:.*"
+  source_types: [pipeline, sunbeam, kubernetes]
+  severity: 9
+  context_window_secs: 60
+
+# ── Snap service crash-loop ─────────────────────────────────────
+
+- id: SNAP_SERVICE_CRASH_LOOP
+  category: snap
+  description: "A snap service is crash-looping — systemd restarting it repeatedly"
+  regex: "Main process exited.*code=exited.*status=[1-9].*FAILURE"
+  source_types: [syslog]
+  severity: 8
+  context_window_secs: 120
+
+# ── Kubernetes / CNI ────────────────────────────────────────────
+
+- id: K8S_DNS_RESOLUTION_FAIL
+  category: network
+  description: "Kubernetes service DNS resolution failed (svc.cluster.local)"
+  regex: "cannot resolve.*svc\\.cluster\\.local|lookup.*svc\\.cluster\\.local.*(timeout|canceled|misbehaving)"
+  source_types: [juju, syslog, cloud_init]
+  severity: 8
+  context_window_secs: 120
+
+- id: CILIUM_CNI_MISSING
+  category: network
+  description: "Machine is missing cilium_host network interface — Kubernetes CNI not operational"
+  regex: "missing cilium_host network interface"
+  source_types: [juju]
+  severity: 8
+  context_window_secs: 300
+
+# ── Security ────────────────────────────────────────────────────
+
+- id: APPARMOR_DENIED
+  category: security
+  description: "AppArmor denied an operation"
+  regex: "apparmor.*DENIED|avc.*denied"
+  source_types: [syslog]
+  severity: 5
+  context_window_secs: 60
+
+# ── Additional network / connectivity ───────────────────────────
+
+- id: CURL_CONNECT_TIMEOUT
+  category: network
+  description: "curl failed to connect due to timeout"
+  regex: "curl.*Failed to connect.*[Tt]imeout|curl.*Resolving timed out"
+  source_types: [cloud_init, pipeline, syslog]
+  severity: 7
+  context_window_secs: 120
+
+# ── Additional snap ─────────────────────────────────────────────
+
+- id: SNAP_SERVICE_FAILED
+  category: snap
+  description: "Snap service failed to start"
+  regex: "Job for snap\\..*\\.service failed"
+  source_types: [syslog, juju]
+  severity: 7
+  context_window_secs: 120
+
+# ── Juju cross-model / SAAS ─────────────────────────────────────
+
+- id: JUJU_SAAS_INTEGRATION_BLOCKED
+  category: juju
+  description: "SAAS cross-model integration is blocked or waiting"
+  regex: "SAAS integration.*status: (blocked|waiting)|Cross-model offer.*status: (blocked|waiting)"
+  source_types: [juju]
+  severity: 7
+  context_window_secs: 300
+
+- id: JUJU_INTEGRATION_INCOMPLETE
+  category: juju
+  description: "Juju integration (relation) is incomplete"
+  regex: "integration incomplete|relation incomplete|integration not ready"
+  source_types: [juju, pipeline]
+  severity: 7
+  context_window_secs: 180
+
+- id: JUJU_APP_BLOCKED
+  category: juju
+  description: "Juju application is in blocked state"
+  regex: "Application.*status: blocked|\\] Application.*blocked"
+  source_types: [juju]
+  severity: 8
+  context_window_secs: 180
+
+- id: JUJU_APP_WAITING
+  category: juju
+  description: "Juju application stuck in waiting state"
+  regex: "Application.*status: waiting|\\] Application.*waiting"
+  source_types: [juju]
+  severity: 6
+  context_window_secs: 180
+
+# ── OVN / OVS networking ────────────────────────────────────────
+
+- id: OVN_CONNECTION_RESET
+  category: network
+  description: "OVN/OVS connection reset (typically SSL or OVSDB)"
+  regex: "SSL_read.*Connection reset|Connection reset by peer"
+  source_types: [syslog]
+  severity: 6
+  context_window_secs: 120
+
+- id: OVN_OVSDB_CONNECTION_FAILED
+  category: network
+  description: "Unable to connect to OVSDB (OVN southbound/northbound)"
+  regex: "Unable to open stream to.*6642|Unable to open stream to.*6641|failed to connect to ovsdb"
+  source_types: [syslog]
+  severity: 7
+  context_window_secs: 120
+
+- id: OPENSTACK_HYPERVISOR_ERROR
+  category: openstack
+  description: "OpenStack hypervisor service error"
+  regex: "openstack-hypervisor.*error|openstack-hypervisor.*failed|nova-compute.*error"
+  source_types: [syslog, juju]
+  severity: 7
+  context_window_secs: 120
+
+# ── Kubernetes ──────────────────────────────────────────────────
+
+- id: K8S_POD_CRASH_LOOP
+  category: kubernetes
+  description: "Kubernetes pod in CrashLoopBackOff state"
+  regex: "CrashLoopBackOff|back-off.*restarting failed container"
+  source_types: [kubernetes, syslog, pipeline, juju]
+  severity: 8
+  context_window_secs: 180
+
+- id: K8S_NODE_NOT_READY
+  category: kubernetes
+  description: "Kubernetes node not ready"
+  regex: "node.*NotReady|NodeNotReady|node is not ready"
+  source_types: [kubernetes, syslog, juju]
+  severity: 8
+  context_window_secs: 180
+
+# ── Sunbeam application-level failures ──────────────────────────────
+
+- id: SUNBEAM_K8S_NODE_NOT_FOUND
+  category: sunbeam
+  description: "Sunbeam could not find a matching Kubernetes node for a MAAS machine — cluster join will fail"
+  regex: "No matching k8s node found for|No K8s node matched|Failed to get k8s nodes to update"
+  source_types: [sunbeam, syslog, pipeline]
+  severity: 9
+  context_window_secs: 300
+
+- id: SUNBEAM_TERRAFORM_STATE_LOCK
+  category: sunbeam
+  description: "Terraform failed to acquire state lock — concurrent or stuck operation"
+  regex: "Error acquiring the state lock|Error locking state|state lock|Lock Info"
+  source_types: [sunbeam, pipeline]
+  severity: 9
+  context_window_secs: 300
+
+- id: SUNBEAM_CLUSTERD_UNAVAILABLE
+  category: sunbeam
+  description: "Sunbeam clusterd service is unavailable — database not initialized"
+  regex: "Clusterd service unavailable|Database is not yet initialized|ClusterServiceUnavailableException"
+  source_types: [sunbeam]
+  severity: 7
+  context_window_secs: 120
+
+- id: SUNBEAM_STEP_FAILED
+  category: sunbeam
+  description: "A sunbeam deployment step raised an error"
+  regex: "Failed to get k8s nodes|step.*failed|sunbeam\\.steps\\.\\w+.*ERROR|AddK8SNodeStep.*error"
+  source_types: [sunbeam]
+  severity: 7
+  context_window_secs: 120
+
+- id: SUNBEAM_JUJU_ACCOUNT_NOT_FOUND
+  category: sunbeam
+  description: "Juju user account not found — node may not be part of sunbeam cluster"
+  regex: "JujuAccountNotFound|Juju user account not found"
+  source_types: [sunbeam]
+  severity: 6
+  context_window_secs: 120
+
+# ── OpenStack service errors (from pod logs) ────────────────────
+
+- id: KEYSTONE_AUTH_FAILURE
+  category: openstack
+  description: "Keystone authentication or authorization failure"
+  regex: "Authorization failed|401 Unauthorized|AuthorizationFailure|Unauthorized.*keystone"
+  source_types: [kubernetes, pipeline, juju]
+  severity: 8
+  context_window_secs: 120
+
+- id: NOVA_SCHEDULER_NO_HOST
+  category: openstack
+  description: "Nova scheduler could not find a valid host for instance placement"
+  regex: "No valid host was found|NoValidHost|Failed to compute_node"
+  source_types: [kubernetes, pipeline]
+  severity: 9
+  context_window_secs: 120
+
+- id: NEUTRON_AGENT_DOWN
+  category: openstack
+  description: "Neutron network agent is down or not responding"
+  regex: "Agent .* is down|neutron-.*-agent.*dead|Neutron agent.*not alive"
+  source_types: [kubernetes, pipeline, juju]
+  severity: 8
+  context_window_secs: 120
+
+- id: MYSQL_CONNECTION_REFUSED
+  category: openstack
+  description: "MySQL database connection refused or lost"
+  regex: "Can't connect to MySQL|Lost connection to MySQL|Access denied for user|OperationalError.*MySQL"
+  source_types: [kubernetes, pipeline, juju, syslog]
+  severity: 9
+  context_window_secs: 120
+
+- id: RABBITMQ_CONNECTION_LOST
+  category: openstack
+  description: "RabbitMQ AMQP connection lost or refused"
+  regex: "ConnectionError.*AMQP|Broken pipe.*rabbitmq|Socket closed.*rabbit|AMQP server.*unreachable|amqp.*connection.*refused"
+  source_types: [kubernetes, pipeline, juju, syslog]
+  severity: 8
+  context_window_secs: 120
+
+# ── Infrastructure thresholds (synthetic from meminfo/df) ───────
+
+- id: MEMORY_LOW
+  category: infrastructure
+  description: "Available memory is below 10% of total — system under memory pressure"
+  regex: "Low memory:.*available"
+  source_types: [syslog]
+  severity: 7
+  context_window_secs: 300
+
+- id: DISK_FULL_THRESHOLD
+  category: infrastructure
+  description: "Filesystem usage exceeds 95% — risk of ENOSPC"
+  regex: "Disk nearly full:.*at \\d+% usage"
+  source_types: [syslog]
+  severity: 8
+  context_window_secs: 300
+
+- id: INODE_EXHAUSTION_THRESHOLD
+  category: infrastructure
+  description: "Filesystem inode usage exceeds 95%"
+  regex: "Inode nearly exhausted:.*at \\d+% usage"
+  source_types: [syslog]
+  severity: 8
+  context_window_secs: 300
+
+# ── Real-world bug patterns ────────────────────────────────────
+
+- id: TERRAFORM_REGISTRY_UNREACHABLE
+  category: sunbeam
+  description: "Terraform failed to reach the provider registry — network or proxy issue"
+  regex: "Failed to query available provider packages|registry\\.terraform\\.io.*(connection refused|timeout)|Failed to install provider"
+  source_types: [pipeline, sunbeam, juju]
+  severity: 8
+  context_window_secs: 120
+
+- id: CHARM_CHANNEL_NOT_FOUND
+  category: juju
+  description: "Juju charm or bundle not found in the requested channel"
+  regex: "charm or bundle not found|no revisions of charm.*found|channel.*not found"
+  source_types: [juju, pipeline]
+  severity: 8
+  context_window_secs: 120
+
+- id: SUNBEAM_WEBSOCKET_ERROR
+  category: sunbeam
+  description: "Sunbeam websocket connection closed unexpectedly"
+  regex: "websocket: close 1006|websocket.*unexpected close|websocket.*abnormal closure"
+  source_types: [sunbeam, juju, syslog]
+  severity: 7
+  context_window_secs: 120
+
+- id: MICROCEPH_OSD_MKFS_FAIL
+  category: ceph
+  description: "MicroCeph OSD creation failed during filesystem format"
+  regex: "bluestore failed to load|mkfs fsck found fatal error|failed to create OSD"
+  source_types: [juju, syslog]
+  severity: 9
+  context_window_secs: 180
+
+- id: FD_EXHAUSTION
+  category: infrastructure
+  description: "Process ran out of file descriptors"
+  regex: "Too many open files|EMFILE|socket: too many open files"
+  source_types: [syslog, juju, kubernetes]
+  severity: 8
+  context_window_secs: 120
+
+- id: K8S_INSPECT_FAILURE
+  category: kubernetes
+  description: "k8s inspect failed due to insufficient permissions or group membership"
+  regex: "Insufficient permissions|snap_daemon group|k8s inspect.*failed"
+  source_types: [syslog, pipeline]
+  severity: 6
+  context_window_secs: 120
+
+- id: METALLB_TIMEOUT
+  category: k8s_control_plane
+  description: "MetalLB deployment timed out or is not ready"
+  regex: "timed out waiting for MetalLB|MetalLB.*not ready|metallb.*timed out"
+  source_types: [syslog, juju, pipeline]
+  severity: 8
+  context_window_secs: 180
